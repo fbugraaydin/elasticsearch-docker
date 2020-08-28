@@ -1,0 +1,49 @@
+version: '3'
+services:
+    elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:6.4.2
+        container_name: elasticsearch
+        environment:
+            - cluster.name=docker-cluster
+            - bootstrap.memory_lock=true
+            - discovery.zen.minimum_master_nodes=1
+            - discovery.type=single-node
+            - xpack.security.enabled=false
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        volumes: 
+            - esdata:/usr/shre/elasticsearch/data
+        ports:
+            - "9200:9200"
+            - "9300:9300"
+        networks:
+            - esnet
+    logstash:
+        image: docker.elastic.co/logstash/logstash:6.0.1
+        command: -f /etc/logstash/conf.d/
+        volumes:
+            - ./logstash.conf:/etc/logstash/conf.d
+        ports:
+            - "5000:5000"
+        environment:
+            LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+        depends_on:
+            - elasticsearch
+        networks: 
+            - esnet
+    kibana:
+        image: docker.elastic.co/kibana/kibana:6.0.1
+        volumes:
+            - ./kibana.yml/:/usr/share/kibana/config/kibana.yml
+        ports: 
+            - "5601:5601"
+        depends_on: 
+            - elasticsearch
+        networks: 
+            - esnet
+
+volumes: 
+    esdata:
+        driver: local
+
+networks: 
+    esnet:
